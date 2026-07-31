@@ -1,7 +1,7 @@
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
-
+import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -126,21 +126,36 @@ def get_available_dates(url: str) -> list[dict]:
     return results
 
 
+
 if __name__ == "__main__":
-    available = get_available_dates(URL)
-    print("الأيام المتاحة للحجز:")
-    for d in available:
-        print(f" - {d['label']}  ({d['date']})")
 
-    current_date_codes = {d["date"] for d in available if d["date"]}
-    known_date_codes = load_known_dates()
+    while True:
+        try:
+            available = get_available_dates(URL)
 
-    new_date_codes = current_date_codes - known_date_codes
+            print("\n==============================")
+            print("الأيام المتاحة للحجز:")
+            for d in available:
+                print(f" - {d['label']} ({d['date']})")
 
-    if new_date_codes:
-        new_days = [d for d in available if d["date"] in new_date_codes]
-        print(f"\nفيه يوم/أيام جديدة ظهرت: {[d['label'] for d in new_days]}")
-        sendEmail(new_days)
-        save_known_dates(current_date_codes)
-    else:
-        print("\nمفيش أيام جديدة عن آخر مرة.")
+            current_date_codes = {d["date"] for d in available if d["date"]}
+            known_date_codes = load_known_dates()
+
+            new_date_codes = current_date_codes - known_date_codes
+
+            if new_date_codes:
+                new_days = [d for d in available if d["date"] in new_date_codes]
+                print(f"\n🎉 فيه يوم/أيام جديدة ظهرت: {[d['label'] for d in new_days]}")
+                sendEmail(new_days)
+
+            else:
+                print("\n✅ مفيش أيام جديدة عن آخر مرة.")
+
+            # احفظ آخر قائمة أيام في كل مرة
+            save_known_dates(current_date_codes)
+
+        except Exception as e:
+            print(f"\n❌ حصل خطأ: {e}")
+
+        print("\n⏳ هفحص تاني بعد 10 دقائق...\n")
+        time.sleep(600)  # 600 ثانية = 10 دقائق
